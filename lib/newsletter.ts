@@ -35,31 +35,43 @@ function isValidHttpUrl(value: unknown) {
 }
 
 export function sanitizeNewsletterPayload(payload: unknown) {
-  if (!payload || typeof payload !== 'object' || !Array.isArray((payload as any).sections)) {
+  if (typeof payload !== 'object' || payload === null) {
     return payload
   }
 
-  const clone = Array.isArray((payload as any).sections)
-    ? {
-        ...(payload as Record<string, unknown>),
-        sections: (payload as any).sections.map((section: any) => {
-          if (!section || typeof section !== 'object') {
-            return section
-          }
+  const sections = (payload as { sections?: unknown }).sections
+  if (!Array.isArray(sections)) {
+    return payload
+  }
 
-          if (Array.isArray(section.linkSuggestions)) {
-            const filtered = section.linkSuggestions.filter(isValidHttpUrl)
-            return filtered.length
-              ? { ...section, linkSuggestions: filtered }
-              : { ...section, linkSuggestions: undefined }
-          }
+  const sanitizedSections = sections.map((rawSection) => {
+    if (typeof rawSection !== 'object' || rawSection === null) {
+      return rawSection
+    }
 
-          return section
-        }),
-      }
-    : payload
+    const sectionRecord = { ...(rawSection as Record<string, unknown>) }
+    const rawLinks = sectionRecord['linkSuggestions']
 
-  return clone
+    if (!Array.isArray(rawLinks)) {
+      delete sectionRecord['linkSuggestions']
+      return sectionRecord
+    }
+
+    const validLinks = rawLinks.filter((value): value is string => isValidHttpUrl(value))
+
+    if (validLinks.length === 0) {
+      delete sectionRecord['linkSuggestions']
+    } else {
+      sectionRecord['linkSuggestions'] = validLinks
+    }
+
+    return sectionRecord
+  })
+
+  return {
+    ...(payload as Record<string, unknown>),
+    sections: sanitizedSections,
+  }
 }
 
 export function renderNewsletterHtml(content: NewsletterContent) {
