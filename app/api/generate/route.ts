@@ -3,7 +3,7 @@ import { streamText } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { openai } from '@/lib/ai'
+import { openaiModel } from '@/lib/ai'
 import { supabaseAdmin } from '@/lib/supabase'
 
 const requestSchema = z.object({
@@ -106,14 +106,11 @@ ${sources}`
 
   try {
     const result = await streamText({
-      model: openai('gpt-4.1-mini'),
+      model: openaiModel('gpt-4.1-mini'),
       system: SYSTEM_PROMPT,
-      input: prompt,
+      prompt,
       temperature: 0.7,
-      maxOutputTokens: 2000,
-      responseFormat: {
-        type: 'json',
-      },
+      maxTokens: 2000,
     })
 
     return result.toTextStreamResponse({

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { sendNewsletterEmail } from '@/lib/email'
 import { supabaseAdmin } from '@/lib/supabase'
-import type { NewsletterSection } from '@/emails/Newsletter'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,16 +8,6 @@ export const dynamic = 'force-dynamic'
 type DeliveryRecord = {
   id: string
   issue_id: string
-  user_id: string
-  to_email: string
-  payload: {
-    title?: string
-    intro?: string
-    sections?: NewsletterSection[]
-    outro?: string
-    palette?: { primary?: string; accent?: string; background?: string }
-    preheader?: string
-  } | null
   send_at: string
 }
 
@@ -33,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data: dueDeliveries, error } = await supabase
     .from('deliveries')
-    .select('id, issue_id, user_id, to_email, payload, send_at')
+    .select('id, issue_id, send_at')
     .lte('send_at', new Date().toISOString())
     .eq('status', 'scheduled')
     .limit(20)
@@ -49,39 +37,47 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, processed: 0 })
   }
 
-  const processedIds: string[] = []
-  const failures: { id: string; message: string }[] = []
+  const queuedIssues = new Set<string>()
+  let queuedJobs = 0
 
   for (const delivery of deliveries) {
-    try {
-      const payload = delivery.payload ?? {}
-
-      await sendNewsletterEmail(delivery.to_email, {
-        title: payload.title ?? 'Your AI Newsletter',
-        intro: payload.intro ?? undefined,
-        sections: payload.sections ?? [],
-        outro: payload.outro ?? undefined,
-        palette: payload.palette ?? undefined,
-        preheader: payload.preheader ?? undefined,
-      })
-
-      await supabase
-        .from('deliveries')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', delivery.id)
-
-      processedIds.push(delivery.id)
-    } catch (err) {
-      console.error('Failed to process delivery', delivery.id, err)
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      failures.push({ id: delivery.id, message })
-
-      await supabase
-        .from('deliveries')
-        .update({ status: 'failed', error: message })
-        .eq('id', delivery.id)
+    if (queuedIssues.has(delivery.issue_id)) {
+      continue
     }
+
+    const { data: existingJob, error: jobError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('issue_id', delivery.issue_id)
+      .eq('type', 'send')
+      .not('status', 'in', '("failed","succeeded")')
+      .maybeSingle()
+
+    if (jobError) {
+      console.error('Failed to check send job for issue', delivery.issue_id, jobError)
+      continue
+    }
+
+    if (existingJob) {
+      queuedIssues.add(delivery.issue_id)
+      continue
+    }
+
+    const { error: insertError } = await supabase.from('jobs').insert({
+      issue_id: delivery.issue_id,
+      type: 'send',
+      status: 'queued',
+      attempts: 0,
+    })
+
+    if (insertError) {
+      console.error('Failed to queue send job', insertError)
+      continue
+    }
+
+    queuedIssues.add(delivery.issue_id)
+    queuedJobs++
   }
 
-  return NextResponse.json({ ok: true, processed: processedIds.length, failures })
+  return NextResponse.json({ ok: true, queued: queuedJobs })
 }

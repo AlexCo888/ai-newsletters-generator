@@ -25,6 +25,6 @@ export async function sendNewsletterEmail(to: string, data: NewsletterProps) {
     from,
     to,
     subject: data.title || 'Your AI Newsletter',
-    react: Newsletter(data) as any,
+    react: Newsletter(data),
   })
 }
