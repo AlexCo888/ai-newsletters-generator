@@ -24,6 +24,44 @@ export const newsletterContentSchema = z.object({
 
 export type NewsletterContent = z.infer<typeof newsletterContentSchema>
 
+function isValidHttpUrl(value: unknown) {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+export function sanitizeNewsletterPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || !Array.isArray((payload as any).sections)) {
+    return payload
+  }
+
+  const clone = Array.isArray((payload as any).sections)
+    ? {
+        ...(payload as Record<string, unknown>),
+        sections: (payload as any).sections.map((section: any) => {
+          if (!section || typeof section !== 'object') {
+            return section
+          }
+
+          if (Array.isArray(section.linkSuggestions)) {
+            const filtered = section.linkSuggestions.filter(isValidHttpUrl)
+            return filtered.length
+              ? { ...section, linkSuggestions: filtered }
+              : { ...section, linkSuggestions: undefined }
+          }
+
+          return section
+        }),
+      }
+    : payload
+
+  return clone
+}
+
 export function renderNewsletterHtml(content: NewsletterContent) {
   const sections = content.sections
     .map(
@@ -104,4 +142,3 @@ export function renderNewsletterHtml(content: NewsletterContent) {
     </body>
   </html>`
 }
-

@@ -82,7 +82,7 @@ export async function savePreferences(formData: FormData) {
   const supabase = supabaseAdmin()
 
   const payload = {
-    user_id: profile.clerk_user_id,
+    user_id: profile.id,
     cadence: parsed.data.cadence,
     send_day: parsed.data.send_day,
     send_time: parsed.data.send_time,
@@ -110,4 +110,3 @@ export async function savePreferences(formData: FormData) {
 
   return { ok: true }
 }
-

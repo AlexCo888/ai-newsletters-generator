@@ -58,6 +58,28 @@ export async function requireProfile() {
       .maybeSingle()
 
     if (insertError) {
+      if (insertError.code === '23505') {
+        const { data: existing, error: existingError } = await supabase
+          .from('profiles')
+          .select(
+            'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
+          )
+          .eq('clerk_user_id', userId)
+          .maybeSingle()
+
+        if (existingError) {
+          console.error('Failed to load existing profile after duplicate constraint', existingError)
+          throw new Error('Unable to initialize profile')
+        }
+
+        if (!existing) {
+          console.error('Duplicate profile constraint hit but no existing record found for user', userId)
+          throw new Error('Unable to initialize profile')
+        }
+
+        return existing as ProfileRecord
+      }
+
       console.error('Failed to create profile', insertError)
       throw new Error('Unable to initialize profile')
     }

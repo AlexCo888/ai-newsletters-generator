@@ -21,7 +21,7 @@ export async function saveIssue(issueId: string, payload: IssueContent) {
     .from('issues')
     .select('id')
     .eq('id', issueId)
-    .eq('user_id', profile.clerk_user_id)
+    .eq('user_id', profile.id)
     .maybeSingle()
 
   if (fetchError) {

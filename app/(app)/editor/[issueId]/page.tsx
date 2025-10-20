@@ -14,7 +14,7 @@ type EditorPageProps = {
 
 export default async function EditorPage({ params }: EditorPageProps) {
   const profile = await requireActiveSubscription()
-  const issue = await getIssue(params.issueId, profile.clerk_user_id)
+  const issue = await getIssue(params.issueId, profile.id)
 
   if (!issue) {
     notFound()
@@ -34,4 +34,3 @@ export default async function EditorPage({ params }: EditorPageProps) {
     </div>
   )
 }
-

@@ -15,7 +15,7 @@ function getTimezones() {
 
 export default async function SettingsPage() {
   const profile = await requireActiveSubscription()
-  const preferences = await getPreferences(profile.clerk_user_id)
+  const preferences = await getPreferences(profile.id)
   const timezones = getTimezones()
 
   return (
@@ -33,4 +33,3 @@ export default async function SettingsPage() {
     </div>
   )
 }
-

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 import { openaiModel } from '@/lib/ai'
 import { supabaseAdmin } from '@/lib/supabase'
-import { newsletterContentSchema, renderNewsletterHtml } from '@/lib/newsletter'
+import { newsletterContentSchema, renderNewsletterHtml, sanitizeNewsletterPayload } from '@/lib/newsletter'
 
 export const runtime = 'edge'
 
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
       maxTokens: 2000,
     })
 
-    const parsed = JSON.parse(result.text)
+    const parsed = sanitizeNewsletterPayload(JSON.parse(result.text))
     const validation = newsletterContentSchema.safeParse(parsed)
 
     if (!validation.success) {
