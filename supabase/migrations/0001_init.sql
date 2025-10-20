@@ -12,19 +12,13 @@ create type job_type as enum ('generate', 'send');
 create type job_status as enum ('queued', 'processing', 'succeeded', 'failed', 'retry');
 
 -- Tables
-create table users (
+create table profiles (
   id uuid primary key default gen_random_uuid(),
   clerk_user_id text unique not null,
   email text,
-  created_at timestamptz not null default now()
-);
-
-create table subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
   stripe_customer_id text,
   stripe_subscription_id text,
-  status subscription_status not null default 'canceled',
+  subscription_status subscription_status not null default 'canceled',
   current_period_end timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -32,7 +26,7 @@ create table subscriptions (
 
 create table preferences (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references users(id) on delete cascade,
+  user_id uuid not null unique references profiles(id) on delete cascade,
   cadence cadence_enum not null default '1',
   send_day int,
   send_time time,
@@ -52,7 +46,7 @@ create table preferences (
 
 create table newsletter_templates (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
   name text not null,
   template_version text,
   theme jsonb,
@@ -62,7 +56,7 @@ create table newsletter_templates (
 
 create table issues (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
   scheduled_at timestamptz,
   generated_at timestamptz,
   status issue_status not null default 'pending',
@@ -100,7 +94,7 @@ create table email_events (
 
 create table audit_logs (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id) on delete set null,
+  user_id uuid references profiles(id) on delete set null,
   action text not null,
   meta jsonb,
   created_at timestamptz not null default now()
@@ -109,7 +103,7 @@ create table audit_logs (
 create table deliveries (
   id uuid primary key default gen_random_uuid(),
   issue_id uuid not null references issues(id) on delete cascade,
-  user_id uuid not null references users(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
   to_email text not null,
   payload jsonb,
   status text not null default 'scheduled',
@@ -120,8 +114,8 @@ create table deliveries (
 );
 
 -- Indexes
-create index idx_users_clerk_user_id on users(clerk_user_id);
-create index idx_subscriptions_user_id on subscriptions(user_id);
+create index idx_profiles_clerk_user_id on profiles(clerk_user_id);
+create index idx_profiles_stripe_customer_id on profiles(stripe_customer_id);
 create index idx_preferences_user_id on preferences(user_id);
 create index idx_issues_user_id on issues(user_id);
 create index idx_issues_status_scheduled_at on issues(status, scheduled_at);
@@ -133,8 +127,7 @@ create index idx_deliveries_issue_id on deliveries(issue_id);
 create index idx_deliveries_send_at_status on deliveries(send_at, status);
 
 -- Row Level Security
-alter table users enable row level security;
-alter table subscriptions enable row level security;
+alter table profiles enable row level security;
 alter table preferences enable row level security;
 alter table newsletter_templates enable row level security;
 alter table issues enable row level security;
@@ -144,44 +137,39 @@ alter table audit_logs enable row level security;
 alter table deliveries enable row level security;
 
 -- Base policies (service role has bypass, auth users only operate on their rows)
-create policy "Allow service role full access on users"
-  on users
+create policy "Allow service role full access on profiles"
+  on profiles
   for all
   using (auth.role() = 'service_role')
   with check (auth.role() = 'service_role');
 
 create policy "Users can view own profile"
-  on users
+  on profiles
   for select
   using (auth.uid()::text = clerk_user_id);
 
-create policy "Users can manage own subscriptions"
-  on subscriptions
-  using (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text))
-  with check (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text));
-
 create policy "Users can manage own preferences"
   on preferences
-  using (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text))
-  with check (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text));
+  using (auth.role() = 'service_role' or user_id in (select id from profiles where clerk_user_id = auth.uid()::text))
+  with check (auth.role() = 'service_role' or user_id in (select id from profiles where clerk_user_id = auth.uid()::text));
 
 create policy "Users can read own issues"
   on issues
   for select
-  using (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text));
+  using (auth.role() = 'service_role' or user_id in (select id from profiles where clerk_user_id = auth.uid()::text));
 
 create policy "Users can manage own issues"
   on issues
   for all
-  using (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text))
-  with check (auth.role() = 'service_role' or user_id in (select id from users where clerk_user_id = auth.uid()::text));
+  using (auth.role() = 'service_role' or user_id in (select id from profiles where clerk_user_id = auth.uid()::text))
+  with check (auth.role() = 'service_role' or user_id in (select id from profiles where clerk_user_id = auth.uid()::text));
 
 create policy "Users can read own jobs"
   on jobs
   for select
   using (
     auth.role() = 'service_role'
-    or issue_id in (select id from issues where user_id in (select id from users where clerk_user_id = auth.uid()::text))
+    or issue_id in (select id from issues where user_id in (select id from profiles where clerk_user_id = auth.uid()::text))
   );
 
 create policy "Service role manages jobs"
@@ -195,7 +183,7 @@ create policy "Users can read own email events"
   for select
   using (
     auth.role() = 'service_role'
-    or issue_id in (select id from issues where user_id in (select id from users where clerk_user_id = auth.uid()::text))
+    or issue_id in (select id from issues where user_id in (select id from profiles where clerk_user_id = auth.uid()::text))
   );
 
 create policy "Service role manages email events"
@@ -221,5 +209,5 @@ create policy "Users can read own deliveries"
   for select
   using (
     auth.role() = 'service_role'
-    or user_id in (select id from users where clerk_user_id = auth.uid()::text)
+    or user_id in (select id from profiles where clerk_user_id = auth.uid()::text)
   );
