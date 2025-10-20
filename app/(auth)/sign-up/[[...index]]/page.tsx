@@ -4,8 +4,30 @@ import { SignUp } from '@clerk/nextjs'
 
 export default function SignUpPage() {
   return (
-    <div className="flex w-full max-w-md justify-center rounded-3xl border border-slate-800 bg-slate-900/60 p-8 shadow-xl shadow-black/40">
-      <SignUp appearance={{ elements: { card: { backgroundColor: 'transparent', boxShadow: 'none' } } }} />
+    <div className="flex w-full max-w-md justify-center rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <SignUp 
+        appearance={{ 
+          elements: { 
+            card: { 
+              backgroundColor: 'transparent', 
+              boxShadow: 'none',
+              border: 'none'
+            },
+            headerTitle: {
+              color: '#0f172a'
+            },
+            headerSubtitle: {
+              color: '#64748b'
+            },
+            formButtonPrimary: {
+              backgroundColor: '#0f172a',
+              '&:hover': {
+                backgroundColor: '#334155'
+              }
+            }
+          } 
+        }} 
+      />
     </div>
   )
 }
