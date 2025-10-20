@@ -34,7 +34,7 @@ export async function fetchOrCreateProfile(clerkUserId: string, email?: string |
     .insert({
       clerk_user_id: clerkUserId,
       email: email ?? null,
-      subscription_status: 'inactive',
+      subscription_status: 'canceled',
     })
     .select(
       'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
@@ -95,4 +95,3 @@ export async function createCheckoutSessionForProfile(profile: ProfileRecord, pr
 
   return session
 }
-

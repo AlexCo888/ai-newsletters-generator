@@ -50,7 +50,7 @@ export async function requireProfile() {
       .insert({
         clerk_user_id: userId,
         email,
-        subscription_status: 'inactive',
+        subscription_status: 'canceled',
       })
       .select(
         'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
@@ -77,4 +77,3 @@ export async function requireActiveSubscription() {
 
   return profile
 }
-
