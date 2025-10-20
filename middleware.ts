@@ -17,7 +17,7 @@ export default clerkMiddleware((auth, request) => {
     return
   }
 
-  auth().protect()
+  return auth.protect()
 })
 
 export const config = {
