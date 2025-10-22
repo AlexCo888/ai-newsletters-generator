@@ -1,6 +1,6 @@
 # AI Newsletters Generator
 
-AI-powered newsletter automation built with Next.js 15 App Router, Tailwind v4, Clerk, Supabase, Stripe, Resend, and the Vercel AI SDK. Authenticated subscribers can generate, schedule, and deliver personalized newsletters while billing, cron scheduling, and streaming AI responses run on the server.
+AI-powered newsletter automation built with Next.js 15 App Router, Tailwind v4, Clerk, Supabase, Stripe, Resend, and the Vercel AI SDK. Authenticated subscribers can generate, schedule, and deliver personalized newsletters while billing, cron scheduling, and streaming AI responses run on the server. This was an experiment made with the help of my other app [App Documentation AI Builder](https://github.com/AlexCo888/app-documentation-ai-builder).
 
 ## Quick Start
 
