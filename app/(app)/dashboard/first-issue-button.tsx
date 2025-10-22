@@ -38,8 +38,8 @@ export function FirstIssueButton({ variant = 'primary', size = 'default', classN
   const paddingClasses = size === 'small' ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm'
   const variantClasses =
     variant === 'outline'
-      ? 'border border-slate-700 text-slate-100 hover:border-slate-500 hover:text-white'
-      : 'bg-emerald-500 text-white hover:bg-emerald-400'
+      ? 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900'
+      : 'bg-slate-900 text-white hover:bg-slate-700'
 
   return (
     <button

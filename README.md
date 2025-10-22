@@ -211,11 +211,39 @@ pnpm lint         # Run ESLint on app, lib, and related code
 | `/api/jobs/send` | POST | Node | Creates a newsletter send job. |
 
 ## Billing and Subscriptions
+
+### Stripe Checkout Integration
 - `app/api/checkout/route.ts` calls `lib/billing.ts` to create or reuse customers and generate subscription checkout sessions.
 - The Stripe webhook handler updates `profiles.subscription_status`, `stripe_customer_id`, and billing metadata.
 - Ensure your Stripe webhook endpoint is configured with the Node runtime and the signing secret matches `STRIPE_WEBHOOK_SECRET`.
 - Success redirect: `${NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`  
   Cancel redirect: `${NEXT_PUBLIC_APP_URL}/pricing?checkout=cancelled`
+
+### Stripe Billing Portal
+The app integrates the official Stripe Customer Portal, allowing users to:
+- **Cancel subscriptions** - Users can cancel their subscription directly through Stripe's hosted portal
+- **Update payment methods** - Change credit cards and billing information
+- **View invoices** - Access all past invoices and receipts
+- **Update billing details** - Modify billing address and tax information
+
+**Implementation Details:**
+- Portal sessions are created in `app/(app)/billing/actions.ts` using `stripe.billingPortal.sessions.create()`
+- Users are redirected to Stripe's secure hosted portal at the generated session URL
+- After managing their billing, users return to `/billing` via the `return_url` parameter
+- Subscription changes are automatically synced via webhooks to the `profiles` table
+
+**Webhook Events Handled:**
+- `customer.subscription.created` - New subscription started
+- `customer.subscription.updated` - Subscription modified (plan change, etc.)
+- `customer.subscription.deleted` - Subscription canceled
+- `invoice.payment_succeeded` - Successful payment
+- `invoice.payment_failed` - Failed payment (marks subscription as past_due)
+
+**Configuration:**
+1. Enable the Customer Portal in your [Stripe Dashboard](https://dashboard.stripe.com/settings/billing/portal)
+2. Configure portal settings (cancellation behavior, allowed features)
+3. Ensure webhook endpoint is set up at `https://yourdomain.com/api/webhooks/stripe`
+4. Add the webhook signing secret to `STRIPE_WEBHOOK_SECRET` environment variable
 
 ## AI Generation and Emails
 - `lib/ai.ts` configures the OpenAI client against the Vercel AI Gateway. Update `AI_GATEWAY_API_KEY` in production.

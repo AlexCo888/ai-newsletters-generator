@@ -21,7 +21,7 @@ export function BillingActions({ hasActiveSubscription }: BillingActionsProps) {
           window.location.href = result.url
           return
         }
-        toast.error('Unable to open billing portal')
+        toast.error(result.error ?? 'Unable to open billing portal')
       } catch (error) {
         console.error(error)
         toast.error('Unable to open billing portal')
@@ -46,8 +46,8 @@ export function BillingActions({ hasActiveSubscription }: BillingActionsProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-      <p className="text-sm text-slate-300">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+      <p className="text-sm text-slate-600">
         {hasActiveSubscription
           ? 'Access invoices, update card details, or cancel directly in the Stripe portal.'
           : 'Start your subscription to unlock AI-powered newsletter generation and automation.'}
@@ -56,7 +56,7 @@ export function BillingActions({ hasActiveSubscription }: BillingActionsProps) {
         <button
           onClick={handlePortal}
           disabled={isPortalPending}
-          className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPortalPending ? 'Opening portal…' : 'Open billing portal'}
         </button>
@@ -64,7 +64,7 @@ export function BillingActions({ hasActiveSubscription }: BillingActionsProps) {
         <button
           onClick={handleCheckout}
           disabled={isCheckoutPending}
-          className="inline-flex items-center justify-center rounded-full bg-blue-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isCheckoutPending ? 'Starting checkout…' : 'Start subscription'}
         </button>

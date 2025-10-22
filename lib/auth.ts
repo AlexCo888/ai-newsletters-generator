@@ -45,13 +45,21 @@ export async function requireProfile() {
     const user = await currentUser()
     const email = user?.primaryEmailAddress?.emailAddress ?? null
 
+    // Use upsert to handle race conditions gracefully
+    // If profile already exists, it will be returned; otherwise it will be created
     const { data: inserted, error: insertError } = await supabase
       .from('profiles')
-      .insert({
-        clerk_user_id: userId,
-        email,
-        subscription_status: 'canceled',
-      })
+      .upsert(
+        {
+          clerk_user_id: userId,
+          email,
+          subscription_status: 'canceled',
+        },
+        {
+          onConflict: 'clerk_user_id',
+          ignoreDuplicates: false, // Return the existing row if conflict
+        }
+      )
       .select(
         'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
       )
@@ -59,28 +67,65 @@ export async function requireProfile() {
 
     if (insertError) {
       if (insertError.code === '23505') {
-        const { data: existing, error: existingError } = await supabase
-          .from('profiles')
-          .select(
-            'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
-          )
-          .eq('clerk_user_id', userId)
-          .maybeSingle()
+        // Duplicate key error - another request created the profile
+        // Retry with exponential backoff to handle race condition
+        console.log(`Duplicate key detected for user ${userId}, retrying fetch...`)
+        
+        let existing = null
+        let attempts = 0
+        const maxAttempts = 5
+        const baseDelay = 150 // ms
 
-        if (existingError) {
-          console.error('Failed to load existing profile after duplicate constraint', existingError)
-          throw new Error('Unable to initialize profile')
+        while (!existing && attempts < maxAttempts) {
+          attempts++
+          
+          // Wait before retrying (exponential backoff)
+          const delay = baseDelay * Math.pow(2, attempts - 1)
+          console.log(`Retry attempt ${attempts}/${maxAttempts} after ${delay}ms delay`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+
+          const { data: existingData, error: existingError } = await supabase
+            .from('profiles')
+            .select(
+              'id, clerk_user_id, email, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, created_at, updated_at'
+            )
+            .eq('clerk_user_id', userId)
+            .maybeSingle()
+
+          if (existingError) {
+            console.error(`Failed to load existing profile after duplicate constraint (attempt ${attempts}/${maxAttempts})`, {
+              error: existingError,
+              userId,
+              code: existingError.code,
+              message: existingError.message
+            })
+            if (attempts === maxAttempts) {
+              throw new Error('Unable to initialize profile after retries')
+            }
+            continue
+          }
+
+          if (existingData) {
+            console.log(`Profile found for user ${userId} on attempt ${attempts}`)
+            existing = existingData
+          } else {
+            console.warn(`Profile still not found for user ${userId} on attempt ${attempts}`)
+          }
         }
 
         if (!existing) {
-          console.error('Duplicate profile constraint hit but no existing record found for user', userId)
-          throw new Error('Unable to initialize profile')
+          console.error('Duplicate profile constraint hit but no existing record found for user after retries', {
+            userId,
+            attempts,
+            insertError: insertError.message
+          })
+          throw new Error('Unable to initialize profile - race condition detected')
         }
 
         return existing as ProfileRecord
       }
 
-      console.error('Failed to create profile', insertError)
+      console.error('Failed to create profile', { error: insertError, userId })
       throw new Error('Unable to initialize profile')
     }
 
