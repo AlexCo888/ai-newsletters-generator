@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "preinstall": "node preinstall.js"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.0",

@@ -68,7 +68,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <a
-              href="/signup"
+              href="/sign-up"
               className="mt-10 inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-slate-700"
             >
               Start trial

@@ -68,12 +68,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               >
                 Issue history
               </Link>
-              <Link
-                href={hasActiveSubscription ? '/billing' : '/pricing'}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-              >
-                {hasActiveSubscription ? 'Manage plan' : 'Upgrade'}
-              </Link>
             </div>
           </header>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
