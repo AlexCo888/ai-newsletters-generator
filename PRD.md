@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD) — AI‑Tailored Newsletter App
 
 ## Overview
-- Goal: A Next.js 15 (App Router) app that generates and sends AI‑tailored newsletters. Users subscribe ($5/month) to access a guided, delightful prompt‑to‑newsletter experience. Emails are premium‑quality in both content and design.
-- Stack: Next.js 15 (App Router, RSC), Tailwind v4, shadcn/ui, Vercel AI SDK 5 + Gateway, Vercel hosting, Clerk (auth), Stripe (billing), Supabase (DB/storage), Resend (email), React Email templates, Windsurf (IDE).
+- Goal: A Next.js 16 (App Router) app that generates and sends AI‑tailored newsletters. Users subscribe ($5/month) to access a guided, delightful prompt‑to‑newsletter experience. Emails are premium‑quality in both content and design.
+- Stack: Next.js 16 (App Router, RSC), Tailwind v4, shadcn/ui, Vercel AI SDK 5 + Gateway, Vercel hosting, Clerk (auth), Stripe (billing), Supabase (DB/storage), Resend (email), React Email templates, Windsurf (IDE).
 - Guiding principles: Max performance, low cost, secure by default, elegant UX, minimal cognitive load.
 
 ## Personas & Core Use Cases
@@ -74,7 +74,7 @@ Integrations
 - Vercel Cron: schedule API route every 5 minutes to dispatch due issues.
 - React Email: templates with Tailwind; ensure email‑safe CSS.
 
-## App Router Considerations (Next.js 15)
+## App Router Considerations (Next.js 16)
 Route structure
 - /(marketing)/page: Landing (static, ISR). CTA to sign up.
 - /(marketing)/pricing: Static pricing/details.
@@ -175,7 +175,7 @@ Assumptions
 - Single subscription tier at $5/month; no proration complexities.
 
 ## Implementation Notes (quick start)
-- Initialize Next.js 15 with App Router; Tailwind v4; shadcn/ui.
+- Initialize Next.js 16 with App Router; Tailwind v4; shadcn/ui.
 - Configure Clerk provider in root layout; middleware to protect /(app).
 - Stripe Checkout and portal routes; status mirrored to Supabase subscriptions.
 - Supabase schema migration with RLS; service client only in server.
